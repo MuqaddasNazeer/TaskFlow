@@ -31,11 +31,13 @@ taskFormEl.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const taskData = {
-    userId,
-    title: document.getElementById('title').value,
-    deadline: document.getElementById('deadline').value,
-    category: document.getElementById('category').value,
-  };
+  userId,
+  title: document.getElementById('title').value,
+  deadline: document.getElementById('deadline').value,
+  time: document.getElementById('time').value,
+  category: document.getElementById('category').value,
+};
+
 
   try {
     await fetch(`${BASE_URL}/tasks/create`, {
@@ -77,47 +79,90 @@ filterButtons.forEach(btn => {
 });
 
 // 🚀 Load tasks with filter + animation
+// ... Other existing global variables ...
+
+// ✅ Deadline formatter function
+function formatDeadline(dateStr, timeStr) {
+  const now = new Date();
+  const taskTime = new Date(`${dateStr}T${timeStr}`);
+
+  const diffMs = taskTime - now;
+  const diffMin = Math.floor(diffMs / (1000 * 60));
+  const diffHrs = Math.floor(diffMin / 60);
+
+  if (diffMin < 0) return `⚠️ Overdue (${dateStr} ${timeStr})`;
+  if (diffMin <= 60) return `⏰ Due in ${diffMin} min (${dateStr} ${timeStr})`;
+  if (diffHrs <= 3) return `🕒 In ${diffHrs} hr (${dateStr} ${timeStr})`;
+  return `📅 ${dateStr} ${timeStr}`;
+}
+
+// 🚀 Load tasks with filter + animation
 async function loadTasks() {
-  try {
-    const res = await fetch(`${BASE_URL}/tasks/user/${userId}`);
-    const tasks = await res.json();
+  const res = await fetch(`${BASE_URL}/tasks/user/${userId}`);
+  const tasks = await res.json();
 
-    const filtered = activeFilter === 'All'
-      ? tasks
-      : tasks.filter(t => t.category === activeFilter);
+  const filtered = activeFilter === 'All' ? tasks : tasks.filter(t => t.category === activeFilter);
+  if (filtered.length === 0) {
+    taskList.innerHTML = '<p>No tasks found.</p>';
+    return;
+  }
 
-    if (filtered.length === 0) {
-      taskList.innerHTML = '<p>No tasks found.</p>';
-      return;
-    }
-
-    taskList.innerHTML = '';
-    filtered.forEach(task => {
-      const el = document.createElement('div');
-      el.className = 'task-card';
-      el.innerHTML = `
-        <div class="info">
-          <strong>${task.title}</strong><br>
-          <div class="meta">
-            <span>📅 ${task.deadline}</span>
-            <span>📁 ${task.category}</span>
-          </div>
+  taskList.innerHTML = '';
+  filtered.forEach(task => {
+    const el = document.createElement('div');
+    el.className = 'task-card';
+    el.innerHTML = `
+      <div class="info">
+        <strong>${task.title}</strong><br>
+        <div class="meta">
+          <span>${formatDeadline(task.deadline, task.time)}</span>
+          <span>📁 ${task.category}</span>
         </div>
-        <div>
-          ${task.completed ? '✅' : '🕓'}
-        </div>
-      `;
+      </div>
+      <div class="actions">
+        ${task.completed ? '✅' : `<button onclick="markComplete(${task.id})">✔️ Done</button>`}
+        <button onclick="editTask(${task.id}, '${task.title}', '${task.deadline}', '${task.time}', '${task.category}')">✏️ Edit</button>
+        <button onclick="deleteTask(${task.id})">🗑️ Delete</button>
+      </div>
+    `;
+    taskList.appendChild(el);
+  });
+}
 
-      // Smooth animation
-      el.style.opacity = 0;
-      taskList.appendChild(el);
-      setTimeout(() => (el.style.opacity = 1), 50);
+async function markComplete(id) {
+  await fetch(`${BASE_URL}/tasks/complete/${id}`, { method: 'PUT' });
+  loadTasks();
+}
+
+function editTask(id, title, deadline, category) {
+  document.getElementById('title').value = title;
+  document.getElementById('deadline').value = deadline;
+  document.getElementById('category').value = category;
+  taskFormSection.classList.remove('hidden');
+
+  taskFormEl.onsubmit = async (e) => {
+    e.preventDefault();
+    await fetch(`${BASE_URL}/tasks/update/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: document.getElementById('title').value,
+        deadline: document.getElementById('deadline').value,
+        category: document.getElementById('category').value,
+      }),
     });
-  } catch (error) {
-    taskList.innerHTML = '<p>Failed to load tasks.</p>';
-    console.error(error);
+    taskFormEl.reset();
+    loadTasks();
+  };
+}
+
+async function deleteTask(id) {
+  if (confirm('Are you sure you want to delete this task?')) {
+    await fetch(`${BASE_URL}/tasks/delete/${id}`, { method: 'DELETE' });
+    loadTasks();
   }
 }
+
 
 // 🔃 Initial task load
 loadTasks();

@@ -14,6 +14,7 @@ db.run(`CREATE TABLE IF NOT EXISTS tasks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT,
   deadline TEXT,
+  time TEXT,
   category TEXT,
   completed INTEGER DEFAULT 0,
   user_id INTEGER,

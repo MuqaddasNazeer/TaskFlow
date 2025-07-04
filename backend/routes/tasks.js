@@ -4,11 +4,11 @@ const db = require('../db');
 
 // Create Task
 router.post('/create', (req, res) => {
-  const { userId, title, category, deadline } = req.body;
+  const { userId, title, category, deadline, time } = req.body;
 
   db.run(
-    `INSERT INTO tasks (user_id, title, category, deadline, completed) VALUES (?, ?, ?, ?, 0)`,
-    [userId, title, category, deadline],
+    `INSERT INTO tasks (user_id, title, category, deadline, time, completed) VALUES (?, ?, ?, ?, ?, 0)`,
+  [userId, title, category, deadline, time],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: 'Task added', taskId: this.lastID });
@@ -49,6 +49,19 @@ router.delete('/delete/:id', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'Task deleted' });
   });
+});
+// Mark Task as Completed
+router.put('/complete/:id', (req, res) => {
+  const taskId = req.params.id;
+
+  db.run(
+    `UPDATE tasks SET completed = 1 WHERE id = ?`,
+    [taskId],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Task marked as completed' });
+    }
+  );
 });
 
 module.exports = router;

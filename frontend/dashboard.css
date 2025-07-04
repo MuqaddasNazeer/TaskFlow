@@ -284,3 +284,21 @@ body.dark .form-section select {
     gap: 10px;
   }
 }
+.actions button {
+  margin-left: 8px;
+  background: #ffcc00;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.actions button:nth-child(2) {
+  background: #2196f3; /* Edit */
+  color: white;
+}
+
+.actions button:nth-child(3) {
+  background: #f44336; /* Delete */
+  color: white;
+}
