@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaskFlow Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">🧠 TaskFlow</div>
+      <button id="addTaskBtn">➕ Add Task</button>
+      <button id="viewTasksBtn">📋 View Tasks</button>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Topbar -->
+      <header class="topbar">
+        <span id="greeting">Welcome, </span>
+        <div class="user">
+          <img id="userAvatar" src="" alt="User Avatar" />
+          <span id="username">User</span>
+        </div>
+      </header>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="filters">
+          <button class="filter-btn active" data-filter="All">All</button>
+          <button class="filter-btn" data-filter="Work">Work</button>
+          <button class="filter-btn" data-filter="Personal">Personal</button>
+          <button class="filter-btn" data-filter="Learning">Learning</button>
+        </div>
+        <div class="theme-toggle">
+          <label class="switch">
+            <input type="checkbox" id="darkModeToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Add Task Form -->
+      <section id="taskForm" class="form-section hidden">
+        <h2>Create a New Task</h2>
+        <form id="taskFormEl">
+          <input type="text" id="title" placeholder="Task Title" required />
+          <input type="date" id="deadline" required />
+          <select id="category">
+            <option>Work</option>
+            <option>Personal</option>
+            <option>Learning</option>
+          </select>
+          <button type="submit">Save Task</button>
+        </form>
+      </section>
+
+      <!-- Task List -->
+      <section id="taskList" class="task-list">Loading...</section>
+    </main>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
