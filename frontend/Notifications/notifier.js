@@ -2,13 +2,15 @@
 
 const notifiedStages = {}; // Stores taskId => Set of notified stages
 
-if ('Notification' in window && Notification.permission !== 'granted') {
+if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted') {
   Notification.requestPermission().then(permission => {
     if (permission !== 'granted') {
       console.warn('🔕 Notification permission denied.');
     }
   });
 }
+
+
 
 function stageAlreadyNotified(taskId, stage) {
   if (!notifiedStages[taskId]) return false;
@@ -24,7 +26,8 @@ function markStageNotified(taskId, stage) {
 
 // Notify with title, body, icon
 function showNotification(title, body) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (typeof window !== 'undefined' && (!('Notification' in window) || Notification.permission !== 'granted')) return;
+
 
   const notification = new Notification(title, {
     body,
@@ -33,14 +36,14 @@ function showNotification(title, body) {
   });
 
   notification.onclick = () => {
-    window.focus();
-    notification.close(); // Manually close on click
+    if (typeof window !== 'undefined') window.focus();
+    notification.close();
   };
 }
 
 
 // Exported function for checking tasks
-export function checkUpcomingTasks(tasks) {
+ export function checkUpcomingTasks(tasks) {
   const now = new Date();
 
   tasks.forEach(task => {
@@ -71,4 +74,6 @@ export function checkUpcomingTasks(tasks) {
     }
   });
 }
+
+
 

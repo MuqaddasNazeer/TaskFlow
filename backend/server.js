@@ -6,8 +6,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 
-const app = express(); // ✅ FIX: app initialized BEFORE use()
-
+const app = express(); 
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -18,8 +17,13 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 
-// ✅ Server listen
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// ✅ Only start the server if not in test mode
+if (require.main === module) {
+  const PORT = 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+// ✅ Export the app for testing
+module.exports = app;
