@@ -6,7 +6,7 @@ const loginTab = document.getElementById('show-login');
 const signupTab = document.getElementById('show-signup');
 const message = document.getElementById('message');
 
-// Toggle tabs
+// Toggle login/signup tabs
 loginTab.addEventListener('click', () => {
   loginTab.classList.add('active');
   signupTab.classList.remove('active');
@@ -23,66 +23,65 @@ signupTab.addEventListener('click', () => {
   message.innerText = '';
 });
 
-// Signup
-signupForm.addEventListener('submit', (e) => {
+// Common fetch utility for POST requests
+async function postData(endpoint, payload) {
+  try {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  } catch (error) {
+    console.error(`Error in ${endpoint}:`, error);
+    return { error: 'Network error. Please try again.' };
+  }
+}
+
+// Handle signup
+signupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const name = document.getElementById('signup-name').value;
   const email = document.getElementById('signup-email').value;
   const password = document.getElementById('signup-password').value;
 
-  // ✅ Password Validation (min 8 chars, 1 letter, 1 number)
   const strongPassword = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
   if (!strongPassword.test(password)) {
     return showMessage('Password must be at least 8 characters with letters and numbers.', true);
   }
 
-  fetch(`${BASE_URL}/auth/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        showMessage(data.error, true);
-      } else {
-        showMessage('Signup successful! Please login now.');
-        signupForm.reset();
-        loginTab.click();
-      }
-    })
-    .catch(() => showMessage('Signup failed. Please try again.', true));
+  const data = await postData('/auth/signup', { name, email, password });
+
+  if (data.error) {
+    showMessage(data.error, true);
+  } else {
+    showMessage('Signup successful! Please login now.');
+    signupForm.reset();
+    loginTab.click();
+  }
 });
 
-
-// Login
-loginForm.addEventListener('submit', (e) => {
+// Handle login
+loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const email = document.getElementById('login-email').value;
   const password = document.getElementById('login-password').value;
 
-  fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-  showMessage(data.error, true);
-} else {
-  showMessage(`Welcome, ${data.name}!`);
-  localStorage.setItem('userId', data.userId);
-  localStorage.setItem('name', data.name);
-  window.location.href = 'dashboard.html';
-}
+  const data = await postData('/auth/login', { email, password });
 
-    })
-    .catch(() => showMessage('Login failed. Please try again.', true));
+  if (data.error) {
+    showMessage(data.error, true);
+  } else {
+    showMessage(`Welcome, ${data.name}!`);
+    localStorage.setItem('userId', data.userId);
+    localStorage.setItem('name', data.name);
+    window.location.href = 'dashboard.html';
+  }
 });
 
+// Display message
 function showMessage(msg, isError = false) {
   message.innerText = msg;
   message.style.color = isError ? 'red' : 'green';

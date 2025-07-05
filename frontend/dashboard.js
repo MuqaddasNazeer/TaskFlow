@@ -1,36 +1,37 @@
 import { checkUpcomingTasks } from './Notifications/notifier.js';
+
 let isEditing = false;
 let editingTaskId = null;
 
 const BASE_URL = 'http://localhost:3000/api';
 
+// Retrieve user credentials from localStorage
 const userId = localStorage.getItem('userId');
 const userName = localStorage.getItem('name');
 
-// 🚫 Protect access if not logged in
+// Redirect unauthorized users
 if (!userId) {
-  alert('You must log in first!');
+  alert('You must log in first.');
   window.location.href = 'login.html';
 }
 
-// 🧑 Display user name & avatar
+// Display user greeting and avatar
 document.getElementById('username').innerText = userName || 'User';
 document.getElementById('greeting').innerText = `Welcome, ${userName || 'User'}!`;
+document.getElementById('userAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=2188ff&color=fff&rounded=true&size=40`;
 
-const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=2188ff&color=fff&rounded=true&size=40`;
-document.getElementById('userAvatar').src = avatarUrl;
-
-// 🔘 Task creation form toggle
+// DOM Elements
 const addTaskBtn = document.getElementById('addTaskBtn');
 const taskFormSection = document.getElementById('taskForm');
 const taskFormEl = document.getElementById('taskFormEl');
 const taskList = document.getElementById('taskList');
 
+// Toggle task form visibility
 addTaskBtn.addEventListener('click', () => {
   taskFormSection.classList.toggle('hidden');
 });
 
-// 📤 Submit task
+// Handle task submission (create or update)
 taskFormEl.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -44,7 +45,6 @@ taskFormEl.addEventListener('submit', async (e) => {
 
   try {
     if (isEditing) {
-      // Edit Mode
       await fetch(`${BASE_URL}/tasks/update/${editingTaskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +53,6 @@ taskFormEl.addEventListener('submit', async (e) => {
       isEditing = false;
       editingTaskId = null;
     } else {
-      // Create Mode
       await fetch(`${BASE_URL}/tasks/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -69,20 +68,18 @@ taskFormEl.addEventListener('submit', async (e) => {
   }
 });
 
-
-// 🌗 Dark Mode toggle
+// Initialize dark mode based on saved preference
 const darkToggle = document.getElementById('darkModeToggle');
 if (localStorage.getItem('darkMode') === 'enabled') {
   document.body.classList.add('dark');
   darkToggle.checked = true;
 }
-
 darkToggle.addEventListener('change', () => {
   document.body.classList.toggle('dark');
   localStorage.setItem('darkMode', document.body.classList.contains('dark') ? 'enabled' : 'disabled');
 });
 
-// 🎯 Filter tasks
+// Task filtering logic
 const filterButtons = document.querySelectorAll('.filter-btn');
 let activeFilter = 'All';
 
@@ -95,27 +92,23 @@ filterButtons.forEach(btn => {
   });
 });
 
-// 🚀 Load tasks with filter + animation
-// ... Other existing global variables ...
-
-// ✅ Deadline formatter function
+// Format deadline to human-readable string
 function formatDeadline(dateStr, timeStr) {
   const now = new Date();
   const taskTime = new Date(`${dateStr}T${timeStr}`);
-
   const diffMs = taskTime - now;
   const diffMin = Math.floor(diffMs / (1000 * 60));
   const diffHrs = Math.floor(diffMin / 60);
 
-  if (diffMin < 0) return `⚠️ Overdue (${dateStr} ${timeStr})`;
-  if (diffMin <= 60) return `⏰ Due in ${diffMin} min (${dateStr} ${timeStr})`;
-  if (diffHrs <= 3) return `🕒 In ${diffHrs} hr (${dateStr} ${timeStr})`;
-  return `📅 ${dateStr} ${timeStr}`;
+  if (diffMin < 0) return `Overdue (${dateStr} ${timeStr})`;
+  if (diffMin <= 60) return `Due in ${diffMin} min (${dateStr} ${timeStr})`;
+  if (diffHrs <= 3) return `In ${diffHrs} hr (${dateStr} ${timeStr})`;
+  return `${dateStr} ${timeStr}`;
 }
 
-// ✨ Helper Function — Determines urgency class based on deadline
+// Determine urgency class for styling
 function getTaskUrgencyClass(task) {
-  if (task.completed) return 'overdue'; // or return 'safe' if you want completed to be green
+  if (task.completed) return 'overdue'; // can be customized to 'safe'
 
   const now = new Date();
   const taskTime = new Date(`${task.deadline}T${task.time}`);
@@ -127,14 +120,13 @@ function getTaskUrgencyClass(task) {
   return 'safe';
 }
 
-
-// 🚀 Load tasks with filter + animation
+// Load and categorize tasks
 async function loadTasks() {
   try {
     const res = await fetch(`${BASE_URL}/tasks/user/${userId}`);
     const tasks = await res.json();
-    checkUpcomingTasks(tasks);
 
+    checkUpcomingTasks(tasks);
     const filtered = activeFilter === 'All' ? tasks : tasks.filter(t => t.category === activeFilter);
 
     if (filtered.length === 0) {
@@ -142,7 +134,7 @@ async function loadTasks() {
       return;
     }
 
-    // Step 1: Categorize tasks
+    // Categorization
     const now = new Date();
     const overdue = [];
     const inProgress = [];
@@ -150,36 +142,32 @@ async function loadTasks() {
 
     filtered.forEach(task => {
       const taskTime = new Date(`${task.deadline}T${task.time}`);
-      if (task.completed) {
-        completed.push(task);
-      } else if (taskTime < now) {
-        overdue.push(task); // Not completed, and overdue
-      } else {
-        inProgress.push(task); // Not completed, and still in time
-      }
+      if (task.completed) completed.push(task);
+      else if (taskTime < now) overdue.push(task);
+      else inProgress.push(task);
     });
 
-    // Step 2: Sort all 3 groups
+    // Sorting
     const sortByTime = (a, b) => new Date(`${a.deadline}T${a.time}`) - new Date(`${b.deadline}T${b.time}`);
     overdue.sort(sortByTime);
     inProgress.sort(sortByTime);
     completed.sort(sortByTime);
 
-    // Step 3: Render groups
+    // Render categorized tasks
     taskList.innerHTML = '';
 
     if (overdue.length > 0) {
-      taskList.innerHTML += `<h3 style="color:#f44336;">⛔ Overdue Tasks</h3>`;
+      taskList.innerHTML += `<h3 style="color:#f44336;">Overdue Tasks</h3>`;
       overdue.forEach(renderTaskCard);
     }
 
     if (inProgress.length > 0) {
-      taskList.innerHTML += `<h3 style="color:#ff9800;">🟠 In Progress Tasks</h3>`;
+      taskList.innerHTML += `<h3 style="color:#ff9800;">In Progress Tasks</h3>`;
       inProgress.forEach(renderTaskCard);
     }
 
     if (completed.length > 0) {
-      taskList.innerHTML += `<h3 style="color:#4caf50;">✅ Completed Tasks</h3>`;
+      taskList.innerHTML += `<h3 style="color:#4caf50;">Completed Tasks</h3>`;
       completed.forEach(renderTaskCard);
     }
 
@@ -189,9 +177,7 @@ async function loadTasks() {
   }
 }
 
-
-
-
+// Task actions
 async function markComplete(id) {
   await fetch(`${BASE_URL}/tasks/complete/${id}`, { method: 'PUT' });
   loadTasks();
@@ -208,6 +194,8 @@ function editTask(id, title, deadline, time, category) {
 
   taskFormSection.classList.remove('hidden');
 }
+
+// Render task card HTML
 function renderTaskCard(task) {
   const now = new Date();
   const taskTime = new Date(`${task.deadline}T${task.time}`);
@@ -228,36 +216,31 @@ function renderTaskCard(task) {
       <strong>${task.title}</strong><br>
       <div class="meta">
         <span>${formatDeadline(task.deadline, task.time)}</span>
-        <span>📁 ${task.category}</span>
+        <span>${task.category}</span>
       </div>
     </div>
     <div class="actions">
-      ${task.completed ? '✅' : `<button onclick="markComplete(${task.id})">✔️ Done</button>`}
-      <button onclick="editTask(${task.id}, '${task.title}', '${task.deadline}', '${task.time}', '${task.category}')">✏️ Edit</button>
-      <button onclick="deleteTask(${task.id})">🗑️ Delete</button>
+      ${task.completed ? '✔️ Completed' : `<button onclick="markComplete(${task.id})">Mark Done</button>`}
+      <button onclick="editTask(${task.id}, '${task.title}', '${task.deadline}', '${task.time}', '${task.category}')">Edit</button>
+      <button onclick="deleteTask(${task.id})">Delete</button>
     </div>
   `;
   taskList.appendChild(el);
 }
 
-
-
+// Delete task with confirmation
 async function deleteTask(id) {
   if (confirm('Are you sure you want to delete this task?')) {
-    console.log('Deleting Task ID:', id);
     await fetch(`${BASE_URL}/tasks/delete/${id}`, { method: 'DELETE' });
     loadTasks();
   }
 }
 
-
+// Export task functions to global scope
 window.deleteTask = deleteTask;
 window.editTask = editTask;
 window.markComplete = markComplete;
 
-// 🔃 Initial task load
+// Initial data load
 loadTasks();
-setInterval(loadTasks, 10000); // Auto-refresh tasks every 60 seconds
- // check every 30 seconds
-
- 
+setInterval(loadTasks, 10000); // Auto-refresh tasks every 10 seconds
