@@ -1,3 +1,7 @@
+import { checkUpcomingTasks } from './Notifications/notifier.js';
+let isEditing = false;
+let editingTaskId = null;
+
 const BASE_URL = 'http://localhost:3000/api';
 
 const userId = localStorage.getItem('userId');
@@ -31,27 +35,40 @@ taskFormEl.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const taskData = {
-  userId,
-  title: document.getElementById('title').value,
-  deadline: document.getElementById('deadline').value,
-  time: document.getElementById('time').value,
-  category: document.getElementById('category').value,
-};
-
+    userId,
+    title: document.getElementById('title').value,
+    deadline: document.getElementById('deadline').value,
+    time: document.getElementById('time').value,
+    category: document.getElementById('category').value,
+  };
 
   try {
-    await fetch(`${BASE_URL}/tasks/create`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(taskData),
-    });
+    if (isEditing) {
+      // Edit Mode
+      await fetch(`${BASE_URL}/tasks/update/${editingTaskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData),
+      });
+      isEditing = false;
+      editingTaskId = null;
+    } else {
+      // Create Mode
+      await fetch(`${BASE_URL}/tasks/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData),
+      });
+    }
 
     taskFormEl.reset();
+    taskFormSection.classList.add('hidden');
     loadTasks();
   } catch (error) {
-    console.error('Error creating task:', error);
+    console.error('Error submitting task:', error);
   }
 });
+
 
 // 🌗 Dark Mode toggle
 const darkToggle = document.getElementById('darkModeToggle');
@@ -100,7 +117,8 @@ function formatDeadline(dateStr, timeStr) {
 async function loadTasks() {
   const res = await fetch(`${BASE_URL}/tasks/user/${userId}`);
   const tasks = await res.json();
-
+  checkUpcomingTasks(tasks);
+ 
   const filtered = activeFilter === 'All' ? tasks : tasks.filter(t => t.category === activeFilter);
   if (filtered.length === 0) {
     taskList.innerHTML = '<p>No tasks found.</p>';
@@ -134,35 +152,34 @@ async function markComplete(id) {
   loadTasks();
 }
 
-function editTask(id, title, deadline, category) {
+function editTask(id, title, deadline, time, category) {
+  isEditing = true;
+  editingTaskId = id;
+
   document.getElementById('title').value = title;
   document.getElementById('deadline').value = deadline;
+  document.getElementById('time').value = time;
   document.getElementById('category').value = category;
-  taskFormSection.classList.remove('hidden');
 
-  taskFormEl.onsubmit = async (e) => {
-    e.preventDefault();
-    await fetch(`${BASE_URL}/tasks/update/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: document.getElementById('title').value,
-        deadline: document.getElementById('deadline').value,
-        category: document.getElementById('category').value,
-      }),
-    });
-    taskFormEl.reset();
-    loadTasks();
-  };
+  taskFormSection.classList.remove('hidden');
 }
+
+
 
 async function deleteTask(id) {
   if (confirm('Are you sure you want to delete this task?')) {
+    console.log('Deleting Task ID:', id);
     await fetch(`${BASE_URL}/tasks/delete/${id}`, { method: 'DELETE' });
     loadTasks();
   }
 }
 
 
+window.deleteTask = deleteTask;
+window.editTask = editTask;
+window.markComplete = markComplete;
+
 // 🔃 Initial task load
 loadTasks();
+setInterval(loadTasks, 10000); // Auto-refresh tasks every 60 seconds
+ // check every 30 seconds

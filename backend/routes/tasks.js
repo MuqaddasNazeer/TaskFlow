@@ -27,13 +27,14 @@ router.get('/user/:userId', (req, res) => {
 });
 
 // Update Task
+// Update Task (Fix: include time!)
 router.put('/update/:id', (req, res) => {
   const taskId = req.params.id;
-  const { title, category, deadline, completed } = req.body;
+  const { title, category, deadline, time, completed = 0 } = req.body;
 
   db.run(
-    `UPDATE tasks SET title = ?, category = ?, deadline = ?, completed = ? WHERE id = ?`,
-    [title, category, deadline, completed, taskId],
+    `UPDATE tasks SET title = ?, category = ?, deadline = ?, time = ?, completed = ? WHERE id = ?`,
+    [title, category, deadline, time, completed, taskId],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ message: 'Task updated' });
@@ -43,6 +44,7 @@ router.put('/update/:id', (req, res) => {
 
 // Delete Task
 router.delete('/delete/:id', (req, res) => {
+  console.log('Delete request for ID:', req.params.id); // Debug
   const taskId = req.params.id;
 
   db.run(`DELETE FROM tasks WHERE id = ?`, [taskId], function (err) {
@@ -50,6 +52,7 @@ router.delete('/delete/:id', (req, res) => {
     res.json({ message: 'Task deleted' });
   });
 });
+
 // Mark Task as Completed
 router.put('/complete/:id', (req, res) => {
   const taskId = req.params.id;

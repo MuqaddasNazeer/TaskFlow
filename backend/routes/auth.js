@@ -33,5 +33,17 @@ router.post('/login', (req, res) => {
     }
   );
 });
+router.get('/all', (req, res) => {
+  db.all(`SELECT * FROM users`, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// Ping route to check if auth is working
+router.get('/ping', (req, res) => {
+  res.send('Auth routes are working!');
+});
 
 module.exports = router;
+
