@@ -5,14 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>TaskFlow Dashboard</title>
   <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    /* Optional: Visual feedback for task urgency (if CSS file doesn't already include it) */
+    .task-card {
+      padding: 10px;
+      margin-bottom: 12px;
+      background-color: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-left: 6px solid transparent;
+      transition: border-left 0.3s ease-in-out;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="logo">🧠 TaskFlow</div>
-      <button id="addTaskBtn">➕  Add Task</button>
-      <!-- <button id="viewTasksBtn">📋 View Tasks</button> -->
+      <button id="addTaskBtn">➕ Add Task</button>
     </aside>
 
     <!-- Main Content -->
@@ -49,7 +60,6 @@
           <input type="text" id="title" placeholder="Task Title" required />
           <input type="date" id="deadline" required />
           <input type="time" id="time" required />
-
           <select id="category">
             <option>Work</option>
             <option>Personal</option>
@@ -63,7 +73,9 @@
       <section id="taskList" class="task-list">Loading...</section>
     </main>
   </div>
+  
 
-<script type="module" src="dashboard.js"></script>
+  <!-- JavaScript entry point -->
+  <script type="module" src="dashboard.js"></script>
 </body>
 </html>

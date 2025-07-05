@@ -113,39 +113,84 @@ function formatDeadline(dateStr, timeStr) {
   return `📅 ${dateStr} ${timeStr}`;
 }
 
+// ✨ Helper Function — Determines urgency class based on deadline
+function getTaskUrgencyClass(task) {
+  if (task.completed) return 'overdue'; // or return 'safe' if you want completed to be green
+
+  const now = new Date();
+  const taskTime = new Date(`${task.deadline}T${task.time}`);
+  const diffMin = Math.floor((taskTime - now) / (1000 * 60));
+
+  if (diffMin < 0) return 'overdue';
+  if (diffMin <= 10) return 'danger';
+  if (diffMin <= 60) return 'warning';
+  return 'safe';
+}
+
+
 // 🚀 Load tasks with filter + animation
 async function loadTasks() {
-  const res = await fetch(`${BASE_URL}/tasks/user/${userId}`);
-  const tasks = await res.json();
-  checkUpcomingTasks(tasks);
- 
-  const filtered = activeFilter === 'All' ? tasks : tasks.filter(t => t.category === activeFilter);
-  if (filtered.length === 0) {
-    taskList.innerHTML = '<p>No tasks found.</p>';
-    return;
-  }
+  try {
+    const res = await fetch(`${BASE_URL}/tasks/user/${userId}`);
+    const tasks = await res.json();
+    checkUpcomingTasks(tasks);
 
-  taskList.innerHTML = '';
-  filtered.forEach(task => {
-    const el = document.createElement('div');
-    el.className = 'task-card';
-    el.innerHTML = `
-      <div class="info">
-        <strong>${task.title}</strong><br>
-        <div class="meta">
-          <span>${formatDeadline(task.deadline, task.time)}</span>
-          <span>📁 ${task.category}</span>
-        </div>
-      </div>
-      <div class="actions">
-        ${task.completed ? '✅' : `<button onclick="markComplete(${task.id})">✔️ Done</button>`}
-        <button onclick="editTask(${task.id}, '${task.title}', '${task.deadline}', '${task.time}', '${task.category}')">✏️ Edit</button>
-        <button onclick="deleteTask(${task.id})">🗑️ Delete</button>
-      </div>
-    `;
-    taskList.appendChild(el);
-  });
+    const filtered = activeFilter === 'All' ? tasks : tasks.filter(t => t.category === activeFilter);
+
+    if (filtered.length === 0) {
+      taskList.innerHTML = '<p>No tasks found.</p>';
+      return;
+    }
+
+    // Step 1: Categorize tasks
+    const now = new Date();
+    const overdue = [];
+    const inProgress = [];
+    const completed = [];
+
+    filtered.forEach(task => {
+      const taskTime = new Date(`${task.deadline}T${task.time}`);
+      if (task.completed) {
+        completed.push(task);
+      } else if (taskTime < now) {
+        overdue.push(task); // Not completed, and overdue
+      } else {
+        inProgress.push(task); // Not completed, and still in time
+      }
+    });
+
+    // Step 2: Sort all 3 groups
+    const sortByTime = (a, b) => new Date(`${a.deadline}T${a.time}`) - new Date(`${b.deadline}T${b.time}`);
+    overdue.sort(sortByTime);
+    inProgress.sort(sortByTime);
+    completed.sort(sortByTime);
+
+    // Step 3: Render groups
+    taskList.innerHTML = '';
+
+    if (overdue.length > 0) {
+      taskList.innerHTML += `<h3 style="color:#f44336;">⛔ Overdue Tasks</h3>`;
+      overdue.forEach(renderTaskCard);
+    }
+
+    if (inProgress.length > 0) {
+      taskList.innerHTML += `<h3 style="color:#ff9800;">🟠 In Progress Tasks</h3>`;
+      inProgress.forEach(renderTaskCard);
+    }
+
+    if (completed.length > 0) {
+      taskList.innerHTML += `<h3 style="color:#4caf50;">✅ Completed Tasks</h3>`;
+      completed.forEach(renderTaskCard);
+    }
+
+  } catch (error) {
+    console.error('Error loading tasks:', error);
+    taskList.innerHTML = '<p>Something went wrong while loading tasks.</p>';
+  }
 }
+
+
+
 
 async function markComplete(id) {
   await fetch(`${BASE_URL}/tasks/complete/${id}`, { method: 'PUT' });
@@ -162,6 +207,37 @@ function editTask(id, title, deadline, time, category) {
   document.getElementById('category').value = category;
 
   taskFormSection.classList.remove('hidden');
+}
+function renderTaskCard(task) {
+  const now = new Date();
+  const taskTime = new Date(`${task.deadline}T${task.time}`);
+  const diffMin = Math.floor((taskTime - now) / (1000 * 60));
+
+  let urgencyClass = '';
+  if (task.completed) urgencyClass = 'completed';
+  else if (diffMin < 0) urgencyClass = 'overdue';
+  else if (diffMin <= 10) urgencyClass = 'danger';
+  else if (diffMin <= 60) urgencyClass = 'warning';
+  else urgencyClass = 'safe';
+
+  const el = document.createElement('div');
+  el.className = `task-card ${urgencyClass}`;
+
+  el.innerHTML = `
+    <div class="info">
+      <strong>${task.title}</strong><br>
+      <div class="meta">
+        <span>${formatDeadline(task.deadline, task.time)}</span>
+        <span>📁 ${task.category}</span>
+      </div>
+    </div>
+    <div class="actions">
+      ${task.completed ? '✅' : `<button onclick="markComplete(${task.id})">✔️ Done</button>`}
+      <button onclick="editTask(${task.id}, '${task.title}', '${task.deadline}', '${task.time}', '${task.category}')">✏️ Edit</button>
+      <button onclick="deleteTask(${task.id})">🗑️ Delete</button>
+    </div>
+  `;
+  taskList.appendChild(el);
 }
 
 
@@ -183,3 +259,5 @@ window.markComplete = markComplete;
 loadTasks();
 setInterval(loadTasks, 10000); // Auto-refresh tasks every 60 seconds
  // check every 30 seconds
+
+ 
