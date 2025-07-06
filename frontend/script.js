@@ -77,7 +77,8 @@ loginForm.addEventListener('submit', async (e) => {
     showMessage(`Welcome, ${data.name}!`);
     localStorage.setItem('userId', data.userId);
     localStorage.setItem('name', data.name);
-    window.location.href = 'dashboard.html';
+   window.location.href = 'dashboard/dashboard.html';
+
   }
 });
 

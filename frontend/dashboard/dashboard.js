@@ -1,4 +1,4 @@
-import { checkUpcomingTasks } from './Notifications/notifier.js';
+import { checkUpcomingTasks } from '../Notifications/notifier.js';
 
 let isEditing = false;
 let editingTaskId = null;
